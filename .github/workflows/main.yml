@@ -10,28 +10,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout the code
       - name: Checkout code
         uses: actions/checkout@v2
 
+      # Set up Node.js environment (version 16)
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: "16"
+          node-version: '16'
 
+      # Install dependencies (using npm ci for faster production installs)
       - name: Install dependencies
-        run: npm install
+        run: npm ci --production
 
+      # Build the Next.js app
       - name: Build the application
         run: npm run build
 
-      - name: Deploy to EC2
-        env:
-          HOST_DNS: ${{ secrets.HOST_DNS }}
-          USERNAME: ${{ secrets.USERNAME }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      # Copy build output to EC2 (using rsync for faster transfers)
+      - name: Copy build output to EC2
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > ec2_key.pem
           chmod 600 ec2_key.pem
+          rsync -avz -e "ssh -i ec2_key.pem" ./out/* ${USERNAME}@${HOST_DNS}:/home/${USERNAME}/my-next-app/
+
+      # Ensure the target directory exists on EC2 (create if not exists)
+      - name: Ensure target directory exists on EC2
+        run: |
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${USERNAME}@${HOST_DNS} "mkdir -p /home/${USERNAME}/my-next-app"
-          scp -o StrictHostKeyChecking=no -i ec2_key.pem -r ./* ${USERNAME}@${HOST_DNS}:/home/${USERNAME}/my-next-app/
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${USERNAME}@${HOST_DNS} "cd /home/${USERNAME}/my-next-app && npm install && npm run start"
+
+      # Start the app on EC2 using PM2 (or `npm start` with nohup if PM2 isn't used)
+      - name: Start the app on EC2 with PM2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${USERNAME}@${HOST_DNS} "cd /home/${USERNAME}/my-next-app && pm2 start npm --name 'my-next-app' -- start"
