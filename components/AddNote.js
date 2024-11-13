@@ -23,7 +23,7 @@ const AddNote = ({ handleAddNote }) => {
 
   return (
     <div className={styles.note_new}>
-      {/* <textarea className={styles.text} rows='8' cols='10' placeholder="Type to add a note" value={noteText}
+      {/* <textarea classNam={styles.text} rows='8' cols='10' placeholder="Type to add a note" value={noteText}
             onChange={handleChange} /> */}
 
       <InputEmoji
