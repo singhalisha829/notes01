@@ -32,5 +32,6 @@ jobs:
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > ec2_key.pem
           chmod 600 ec2_key.pem
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${USERNAME}@${HOST_DNS} "mkdir -p /home/${USERNAME}/my-next-app"
           scp -o StrictHostKeyChecking=no -i ec2_key.pem -r ./* ${USERNAME}@${HOST_DNS}:/home/${USERNAME}/my-next-app/
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${USERNAME}@${HOST_DNS} "cd /home/${USERNAME}/my-next-app && npm install && npm run start"
